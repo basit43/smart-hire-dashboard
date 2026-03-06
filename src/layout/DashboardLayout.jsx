@@ -20,7 +20,7 @@ export default function DashboardLayout({ children }) {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-8">
+      <div className="flex-1 p-10 bg-gray-100 min-h-screen">
         {children}
       </div>
     </div>
