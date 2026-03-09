@@ -1,34 +1,63 @@
 import { useState } from "react";
 import DashboardLayout from "../layout/DashboardLayout";
 import API from "../services/api";
+import Loader from "../components/Loader";
 
 export default function Dashboard() {
   const [resume, setResume] = useState(null);
   const [jobDescription, setJobDescription] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [resumeError, setResumeError] = useState("");
+  const [jobError, setJobError] = useState("");
+  const [progress, setProgress] = useState(0);
 
-  const handleAnalyze = async () => {
-    if (!resume || !jobDescription) {
-      alert("Please upload resume and job description");
-      return;
-    }
+const handleAnalyze = async () => {
+  setResumeError("");
+  setJobError("");
 
-    const formData = new FormData();
-    formData.append("resume", resume);
-    formData.append("jobDescription", jobDescription);
+  if (!resume) {
+    setResumeError("Please upload a resume.");
+    return;
+  }
 
-    try {
-      setLoading(true);
-      const { data } = await API.post("/resume/upload", formData);
+  if (!jobDescription.trim()) {
+    setJobError("Please enter a job description.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("resume", resume);
+  formData.append("jobDescription", jobDescription);
+
+  try {
+    setLoading(true);
+    setProgress(0);
+
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 90) return prev;
+        return prev + 10;
+      });
+    }, 300);
+
+    const { data } = await API.post("/resume/upload", formData);
+
+    clearInterval(interval);
+
+    setProgress(100);
+
+    setTimeout(() => {
       setResult(data);
-    } catch (err) {
-      console.error(err);
-      alert("Analysis failed");
-    } finally {
       setLoading(false);
-    }
-  };
+    }, 400);
+
+  } catch (err) {
+    console.error(err);
+    alert("Analysis failed");
+    setLoading(false);
+  }
+};
 
   return (
     <DashboardLayout>
@@ -46,6 +75,9 @@ export default function Dashboard() {
             className="mb-4"
             onChange={(e) => setResume(e.target.files[0])}
           />
+          {resumeError && (
+          <p className="text-red-500 text-sm mb-4">{resumeError}</p>
+          )}
 
           <textarea
             placeholder="Paste job description..."
@@ -54,6 +86,9 @@ export default function Dashboard() {
             value={jobDescription}
             onChange={(e) => setJobDescription(e.target.value)}
           />
+          {jobError && (
+          <p className="text-red-500 text-sm mb-4">{jobError}</p>
+          )}
 
           <button
             onClick={handleAnalyze}
@@ -62,6 +97,8 @@ export default function Dashboard() {
             {loading ? "Analyzing..." : "Analyze Resume"}
           </button>
         </div>
+
+        {loading && <Loader progress={progress} />}
 
         {/* Results */}
         {result && (
