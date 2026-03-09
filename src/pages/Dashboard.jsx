@@ -2,6 +2,7 @@ import { useState } from "react";
 import DashboardLayout from "../layout/DashboardLayout";
 import API from "../services/api";
 import Loader from "../components/Loader";
+import SkillRadar from "../components/SkillRadar";
 
 export default function Dashboard() {
   const [resume, setResume] = useState(null);
@@ -12,52 +13,52 @@ export default function Dashboard() {
   const [jobError, setJobError] = useState("");
   const [progress, setProgress] = useState(0);
 
-const handleAnalyze = async () => {
-  setResumeError("");
-  setJobError("");
+  const handleAnalyze = async () => {
+    setResumeError("");
+    setJobError("");
 
-  if (!resume) {
-    setResumeError("Please upload a resume.");
-    return;
-  }
+    if (!resume) {
+      setResumeError("Please upload a resume.");
+      return;
+    }
 
-  if (!jobDescription.trim()) {
-    setJobError("Please enter a job description.");
-    return;
-  }
+    if (!jobDescription.trim()) {
+      setJobError("Please enter a job description.");
+      return;
+    }
 
-  const formData = new FormData();
-  formData.append("resume", resume);
-  formData.append("jobDescription", jobDescription);
+    const formData = new FormData();
+    formData.append("resume", resume);
+    formData.append("jobDescription", jobDescription);
 
-  try {
-    setLoading(true);
-    setProgress(0);
+    try {
+      setLoading(true);
+      setProgress(0);
 
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 90) return prev;
-        return prev + 10;
-      });
-    }, 300);
+      const interval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 90) return prev;
+          return prev + 10;
+        });
+      }, 300);
 
-    const { data } = await API.post("/resume/upload", formData);
+      const { data } = await API.post("/resume/upload", formData);
 
-    clearInterval(interval);
+      clearInterval(interval);
 
-    setProgress(100);
+      setProgress(100);
 
-    setTimeout(() => {
-      setResult(data);
+      setTimeout(() => {
+        setResult(data);
+        setLoading(false);
+      }, 400);
+
+    } catch (err) {
+      console.error(err);
+      alert("Analysis failed");
       setLoading(false);
-    }, 400);
-
-  } catch (err) {
-    console.error(err);
-    alert("Analysis failed");
-    setLoading(false);
-  }
-};
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -75,8 +76,9 @@ const handleAnalyze = async () => {
             className="mb-4"
             onChange={(e) => setResume(e.target.files[0])}
           />
+
           {resumeError && (
-          <p className="text-red-500 text-sm mb-4">{resumeError}</p>
+            <p className="text-red-500 text-sm mb-4">{resumeError}</p>
           )}
 
           <textarea
@@ -86,9 +88,14 @@ const handleAnalyze = async () => {
             value={jobDescription}
             onChange={(e) => setJobDescription(e.target.value)}
           />
+
           {jobError && (
-          <p className="text-red-500 text-sm mb-4">{jobError}</p>
+            <p className="text-red-500 text-sm mb-4">{jobError}</p>
           )}
+
+          <p className="text-sm text-indigo-600 mb-2">
+          Paste ONLY technical skills and requirements for correct analysis. Avoid including company info, benefits, or other non-technical details.
+          </p>
 
           <button
             onClick={handleAnalyze}
@@ -112,35 +119,52 @@ const handleAnalyze = async () => {
               </span>
             </p>
 
+            <h3 className="font-semibold mt-6 mb-2">ATS Compatibility</h3>
+
+            <p className="text-lg mb-4">
+              ATS Score:
+              <span className="ml-2 font-bold text-indigo-600 text-xl">
+                {result.atsScore}%
+              </span>
+            </p>
+
             <h3 className="font-semibold mb-2">Resume Summary</h3>
             <p className="text-gray-700 mb-6">{result.summary}</p>
 
-            <h3 className="font-semibold mb-2">Matched Skills</h3>
-            <div className="flex flex-wrap gap-2 mb-6">
-              {result.matchedKeywords.map((skill, i) => (
-                <span
-                  key={i}
-                  className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm"
-                >
-                  {skill}
-                </span>
-              ))}
+            <h3 className="font-semibold mb-2 mt-8">Skill Match</h3>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+
+            {result.matchedKeywords.map((skill,i)=>(
+            <div
+            key={i}
+            className="p-3 bg-green-50 border border-green-200 rounded-lg"
+            >
+            <span className="text-green-700 font-medium">
+            {skill.toUpperCase()}
+            </span>
+            </div>
+            ))}
+
             </div>
 
-            <h3 className="font-semibold mb-2">Missing Skills</h3>
-            <div className="flex flex-wrap gap-2">
-              {result.missingKeywords.map((skill, i) => (
-                <span
-                  key={i}
-                  className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm"
-                >
-                  {skill}
-                </span>
-              ))}
+            <h3 className="font-semibold mb-2 mt-8">Skills To Improve</h3>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+
+            {result.missingKeywords.map((skill,i)=>(
+            <div
+            key={i}
+            className="p-3 bg-red-50 border border-red-200 rounded-lg"
+            >
+            <span className="text-red-600 font-medium">
+            {skill.toUpperCase()}
+            </span>
+            </div>
+            ))}
             </div>
           </div>
         )}
-
       </div>
     </DashboardLayout>
   );
