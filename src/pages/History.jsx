@@ -54,10 +54,6 @@ export default function History() {
           <p className="text-gray-500">Loading history...</p>
         )}
 
-        {!loading && history.length === 0 && (
-          <p className="text-gray-500">No resume analyses yet.</p>
-        )}
-
 <div className="space-y-4">
 
   {history.length === 0 && !loading && (
