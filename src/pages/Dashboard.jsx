@@ -41,7 +41,11 @@ export default function Dashboard() {
           return prev + 10;
         });
       }, 300);
-
+      
+      console.log("Sending form data:", {
+        resumeName: resume.name,
+        jobDescription: jobDescription.substring(0, 100) + "..." // Log only the first 100 chars
+      });
       const { data } = await API.post("/resume/upload", formData);
 
       clearInterval(interval);
@@ -53,9 +57,18 @@ export default function Dashboard() {
         setLoading(false);
       }, 400);
 
-    } catch (err) {
-      console.error(err);
-      alert("Analysis failed");
+    }
+    catch (err) {
+
+      console.error("Full Error Object:", err);
+
+      if (err.response) {
+        console.error("Server Error:", err.response.data);
+        alert(err.response.data.message || "Server error");
+      } else {
+        alert("Network error");
+      }
+
       setLoading(false);
     }
   };
@@ -70,12 +83,62 @@ export default function Dashboard() {
         <div className="bg-white p-6 rounded-xl shadow mb-10">
           <h2 className="text-xl font-semibold mb-4">Upload Resume</h2>
 
+        <div
+          className={`border-2 border-dashed rounded-lg p-8 text-center mb-4 cursor-pointer
+          ${resume ? "border-green-400 bg-green-50" : "border-gray-300 bg-gray-50"}`}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            const file = e.dataTransfer.files[0];
+            if (file && file.type === "application/pdf") {
+              setResume(file);
+              setResumeError("");
+            } else {
+              setResumeError("Please upload a PDF file.");
+            }
+          }}
+          onClick={() => document.getElementById("fileInput").click()}
+        >
+
+          {!resume && (
+            <>
+              <p className="text-gray-600 mb-2">
+                Drag & drop your resume here
+              </p>
+              <p className="text-sm text-gray-400">
+                or click to browse
+              </p>
+            </>
+          )}
+
+          {resume && (
+            <p className="text-green-600 font-semibold">
+              {resume.name}
+            </p>
+          )}
+
           <input
+            id="fileInput"
             type="file"
             accept=".pdf"
-            className="mb-4"
-            onChange={(e) => setResume(e.target.files[0])}
+            hidden
+            onChange={(e) => {
+              const file = e.target.files[0];
+              if (file && file.type === "application/pdf") {
+                setResume(file);
+                setResumeError("");
+              } else {
+                setResumeError("Please upload a PDF file.");
+              }
+            }}
           />
+
+          </div>
+          {resumeError && (
+          <p className="text-red-500 text-sm mb-4">
+            {resumeError}
+          </p>
+          )}
 
           {resumeError && (
             <p className="text-red-500 text-sm mb-4">{resumeError}</p>
